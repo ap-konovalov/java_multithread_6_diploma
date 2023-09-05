@@ -21,6 +21,7 @@ public class Server {
     public static void main(String[] args) throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(getProperty("server.port")))) {
             while (!serverSocket.isClosed()) {
+                System.out.println("Server started. Waiting connections on port: " + Integer.parseInt(getProperty("server.port")));
                 Socket clientSocket = serverSocket.accept();
                 ClientHandler clientHandler = new ClientHandler(clientSocket, Logger.getInstance());
                 clients.add(clientHandler);
