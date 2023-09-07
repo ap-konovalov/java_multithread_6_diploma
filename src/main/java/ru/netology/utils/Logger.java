@@ -7,26 +7,26 @@ import java.time.LocalDateTime;
 
 public class Logger {
 
-    private static Logger INSTANCE = null;
+    private static Logger instance = null;
 
     private Logger() {
     }
 
     public static Logger getInstance() {
-        if (INSTANCE == null) {
+        if (instance == null) {
             synchronized (Logger.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new Logger();
+                if (instance == null) {
+                    instance = new Logger();
                 }
             }
         }
-        return INSTANCE;
+        return instance;
     }
 
-    public synchronized void log(String clientName, String message) {
+    public synchronized void log(String message) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter("src/main/resources/log.txt", true))
         ) {
-            bw.write("[" + LocalDateTime.now() + "] " + clientName + ": " + message);
+            bw.write("[" + LocalDateTime.now() + "] " + message);
             bw.newLine();
             bw.flush();
         } catch (IOException e) {

@@ -1,50 +1,72 @@
 package ru.netology;
 
-import lombok.SneakyThrows;
 import ru.netology.utils.Logger;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.*;
 import java.net.Socket;
 
-public class ClientHandler implements Runnable {
+public class ClientHandler extends Thread {
 
-    private final Socket socket;
-    private DataOutputStream out;
+    private Socket socket;
+    private PrintWriter out;
     private final Logger logger;
+    private BufferedReader in;
 
-    public ClientHandler(Socket client, Logger logger) {
-        socket = client;
+    public ClientHandler(Socket client, Logger logger) throws IOException {
+        this.socket = client;
         this.logger = logger;
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out = new PrintWriter(socket.getOutputStream(), true);
+        start();
     }
 
-    @SneakyThrows
     @Override
-    public void run() {
-        out = new DataOutputStream(socket.getOutputStream());
-        DataInputStream in = new DataInputStream(socket.getInputStream());
+    public void run() throws NullPointerException {
+        try {
+            String clientName = in.readLine();
+            out.println("User '" + clientName + "' has joined!");
+            out.println("Now you can write messages!");
+            String entry;
+            while (true) {
+                entry = in.readLine();
 
-        out.writeUTF("Whats your name?");
-        String clientName = in.readUTF();
-        System.out.println("User '" + clientName + "' has joined!");
+                if (entry.equals("/exit")) {
+                    stopService();
+                    break;
+                }
 
-        while (!socket.isClosed()) {
-            String entry = in.readUTF();
+                for (ClientHandler client : Server.clients) {
+                    if (!client.equals(this)) {
+                        client.send(entry);
+                    }
+                }
 
-            if (entry.equalsIgnoreCase("/exit")) {
-                break;
+                logger.log(entry);
             }
-
-            for (ClientHandler clients : Server.clients) {
-                clients.out.writeUTF(clientName + ": " + entry);
-                out.flush();
-            }
-
-            logger.log(clientName, entry);
+        } catch (IOException e) {
+            stopService();
         }
+    }
 
-        in.close();
-        out.close();
-        socket.close();
+    private void send(String msg) {
+        out.println(msg);
+    }
+
+    private void stopService() {
+        try {
+            if (!socket.isClosed()) {
+                socket.close();
+                in.close();
+                out.close();
+                for (ClientHandler client : Server.clients) {
+                    if (client.equals(this)) {
+                        client.interrupt();
+                        Server.clients.remove(this);
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 }

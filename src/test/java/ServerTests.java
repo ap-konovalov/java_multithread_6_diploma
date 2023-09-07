@@ -15,8 +15,8 @@ public class ServerTests {
     private final PrintWriter out = null;
     private static final int SERVER_PORT = Integer.parseInt(PropertyLoader.getProperty("server.port"));
     private static final String SERVER_HOST = PropertyLoader.getProperty("server.host");
-    private DataOutputStream pingSocketOut;
-    private DataInputStream pingSocketIn;
+    private PrintWriter pingSocketOut;
+    private BufferedReader pingSocketIn;
 
     @BeforeEach
     void init() {
@@ -57,17 +57,6 @@ public class ServerTests {
     }
 
     @Test
-    void shouldAskName() throws IOException {
-        try {
-            pingSocket = new Socket(SERVER_HOST, SERVER_PORT);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        pingSocketIn = new DataInputStream(pingSocket.getInputStream());
-        assertEquals("Whats your name?", pingSocketIn.readUTF());
-    }
-
-    @Test
     void shouldAcceptMultipleConnections() {
         try {
             pingSocket = new Socket(SERVER_HOST, SERVER_PORT);
@@ -84,17 +73,17 @@ public class ServerTests {
     void shouldReceiveMessagesFromClients() {
         try {
             pingSocket = new Socket(SERVER_HOST, SERVER_PORT);
-            pingSocketIn = new DataInputStream(pingSocket.getInputStream());
-            pingSocketOut = new DataOutputStream(pingSocket.getOutputStream());
+            pingSocketIn = new BufferedReader(new InputStreamReader(pingSocket.getInputStream()));
+            pingSocketOut = new PrintWriter(pingSocket.getOutputStream(), true);
+            pingSocketOut.println("Alex");
+            pingSocketIn.readLine();
+            pingSocketIn.readLine();
             Socket secondSocket = new Socket(SERVER_HOST, SERVER_PORT);
-            DataOutputStream secondOut = new DataOutputStream(secondSocket.getOutputStream());
-            pingSocketOut.writeUTF("Alex");
-            String secondUserName = "Den";
-            secondOut.writeUTF(secondUserName);
+            PrintWriter secondOut = new PrintWriter(secondSocket.getOutputStream(), true);
+            secondOut.println("Den");
             String secondUserExpectedMessage = "Test message";
-            secondOut.writeUTF(secondUserExpectedMessage);
-            pingSocketIn.readUTF();
-            assertEquals(secondUserName + ": " + secondUserExpectedMessage, pingSocketIn.readUTF());
+            secondOut.println(secondUserExpectedMessage);
+            assertEquals(secondUserExpectedMessage, pingSocketIn.readLine());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

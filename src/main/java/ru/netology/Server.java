@@ -6,8 +6,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static ru.netology.utils.PropertyLoader.*;
 
@@ -16,20 +14,18 @@ public class Server {
 
     static LinkedList<ClientHandler> clients = new LinkedList<>();
 
-    static ExecutorService executeIt = Executors.newFixedThreadPool(Integer.parseInt(getProperty("server.max_clients")));
-
     public static void main(String[] args) throws IOException {
-        try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(getProperty("server.port")))) {
-            while (!serverSocket.isClosed()) {
-                System.out.println("Server started. Waiting connections on port: " + Integer.parseInt(getProperty("server.port")));
+        int port = Integer.parseInt(getProperty("server.port"));
+        ServerSocket serverSocket = new ServerSocket(port);
+        System.out.println("Server started. Waiting connections on port: " + port);
+        try {
+            while (true) {
                 Socket clientSocket = serverSocket.accept();
                 ClientHandler clientHandler = new ClientHandler(clientSocket, Logger.getInstance());
                 clients.add(clientHandler);
-                executeIt.execute(clientHandler);
             }
-            executeIt.shutdown();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } finally {
+            serverSocket.close();
         }
     }
 }
